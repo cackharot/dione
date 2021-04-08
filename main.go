@@ -1,15 +1,19 @@
 package main
 
 import (
-	// "bytes"
-	//	"encoding/gob"
 	"bufio"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/go-co-op/gocron"
+	"math"
 	"net"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 )
+import bolt "go.etcd.io/bbolt"
 
 type JsonRPCRequest struct {
 	Id      int    `json:"id"`
@@ -27,6 +31,8 @@ type MinerStatResponse struct {
 	ID      int    `json:"id"`
 	Jsonrpc string `json:"jsonrpc"`
 	Result  struct {
+		ID         int       `json:"id"`
+		CreatedAt  time.Time `json:"created_at"`
 		Connection struct {
 			Connected bool   `json:"connected"`
 			Switches  int    `json:"switches"`
@@ -120,7 +126,6 @@ func getStat(conn net.Conn) MinerStatResponse {
 
 	var stat MinerStatResponse
 	makeReq(conn, statReq, &stat)
-	fmt.Println("Stat = ", stat.Result.Host.Name)
 	return stat
 }
 
@@ -135,18 +140,70 @@ func getConn(wrkAddr string) net.Conn {
 		println("Dial failed:", err.Error())
 		os.Exit(1)
 	}
-  return conn
+	return conn
+}
+
+// itob returns an 8-byte big endian representation of v.
+func itob(v int) []byte {
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, uint64(v))
+	return b
+}
+
+func hexToF(h string) float64 {
+	f, _ := strconv.ParseUint(h[2:], 16, 32)
+	return math.Round(float64(f)) / math.Pow(10, 6)
+}
+
+func storeStat(conn net.Conn, db *bolt.DB) {
+	r := getStat(conn)
+	hrHex := r.Result.Mining.Hashrate
+	host := r.Result.Host.Name
+	fmt.Print(host)
+	fmt.Printf("\tHashrate = %.2f MH/s\n", hexToF(hrHex))
+	r.Result.CreatedAt = time.Now()
+	val, err := json.Marshal(r.Result)
+	db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("stats"))
+		ns, _ := b.NextSequence()
+		k := int(ns)
+		return b.Put(itob(k), val)
+	})
+	if err != nil {
+		panic("Error updating db!")
+	}
+}
+
+func executeStatFetchJob(conn net.Conn, db *bolt.DB, t int) {
+	s := gocron.NewScheduler(time.UTC)
+	s.Every(t).Second().Do(func() {
+		storeStat(conn, db)
+	})
+	s.StartAsync()
 }
 
 func main() {
+	path := "/tmp/dione-stats.db"
+	db, err := bolt.Open(path, 0666, &bolt.Options{Timeout: 1 * time.Second})
+	if err != nil {
+		panic(err)
+	}
+	db.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists([]byte("stats"))
+		if err != nil {
+			panic(err)
+		}
+		return nil
+	})
+
 	wrkAddr := "192.168.0.103:9033"
-  conn := getConn(wrkAddr)
+	conn := getConn(wrkAddr)
 
-	ping(conn)
+	executeStatFetchJob(conn, db, 5)
 
-	getStat(conn)
-
-	conn.Close()
+	fmt.Println("Press Ctrl+C to quit!")
+	fmt.Scanln() // remove after implementing api server
+	defer conn.Close()
 	// fmt.Println("Starting API server")
 	// if err := http.ListenAndServe(":8088", http.HandlerFunc(todo)); err != nil {
 	//   panic(err)
