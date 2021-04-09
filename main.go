@@ -4,104 +4,44 @@ import (
 	"bufio"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/go-co-op/gocron"
 	"math"
 	"net"
-	"net/http"
 	"os"
 	"strconv"
+	s "strings"
 	"time"
+
+	"github.com/go-co-op/gocron"
+
+	bolt "go.etcd.io/bbolt"
 )
-import bolt "go.etcd.io/bbolt"
 
-type JsonRPCRequest struct {
-	Id      int    `json:"id"`
-	JsonRpc string `json:"jsonrpc"`
-	Method  string `json:"method"`
-}
-
-type PingResponse struct {
-	Id      int    `json:"id"`
-	JsonRpc string `json:"jsonrpc"`
-	Result  string `json:"result"`
-}
-
-type MinerStatResponse struct {
-	ID      int    `json:"id"`
-	Jsonrpc string `json:"jsonrpc"`
-	Result  struct {
-		ID         int       `json:"id"`
-		CreatedAt  time.Time `json:"created_at"`
-		Connection struct {
-			Connected bool   `json:"connected"`
-			Switches  int    `json:"switches"`
-			URI       string `json:"uri"`
-		} `json:"connection"`
-		Devices []struct {
-			Index    int    `json:"_index"`
-			Mode     string `json:"_mode"`
-			Hardware struct {
-				Name    string    `json:"name"`
-				Pci     string    `json:"pci"`
-				Sensors []float64 `json:"sensors"`
-				Type    string    `json:"type"`
-			} `json:"hardware"`
-			Mining struct {
-				Hashrate    string      `json:"hashrate"`
-				PauseReason interface{} `json:"pause_reason"`
-				Paused      bool        `json:"paused"`
-				Segment     []string    `json:"segment"`
-				Shares      []int       `json:"shares"`
-			} `json:"mining"`
-		} `json:"devices"`
-		Host struct {
-			Name    string `json:"name"`
-			Runtime int    `json:"runtime"`
-			Version string `json:"version"`
-		} `json:"host"`
-		Mining struct {
-			Difficulty   float64 `json:"difficulty"`
-			Epoch        int     `json:"epoch"`
-			EpochChanges int     `json:"epoch_changes"`
-			Hashrate     string  `json:"hashrate"`
-			Shares       []int   `json:"shares"`
-		} `json:"mining"`
-		Monitors struct {
-			Temperatures []int `json:"temperatures"`
-		} `json:"monitors"`
-	} `json:"result"`
-}
-
-func todo(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("todo"))
-}
-
-func makeReq(conn net.Conn, payload JsonRPCRequest, res interface{}) interface{} {
+func makeReq(conn net.Conn, payload JsonRPCRequest, res interface{}) error {
 	reqB, _ := json.Marshal(payload)
 	reqStr := string(reqB) + "\n"
 	_, err := conn.Write([]byte(reqStr))
 	if err != nil {
 		fmt.Println("Write to server failed:", err.Error())
-		os.Exit(1)
+		return err
 	}
 	connbuf := bufio.NewReader(conn)
 	str, err := connbuf.ReadString('\n')
 	if err != nil {
 		fmt.Println("Unable to read from worker api", err)
-		os.Exit(1)
+		return err
 	}
 
 	if len(str) > 0 {
 		if err := json.Unmarshal([]byte(str), &res); err != nil {
 			fmt.Println("Error to unmarshal response", str, err)
-			os.Exit(1)
+			return err
 		}
-		return &res
+		return nil
 	}
 	fmt.Println("Empty response from worker api. Not good!")
-	os.Exit(1)
-	return nil
+	return errors.New("Empty response from worker api. Not good!")
 }
 
 func ping(conn net.Conn) bool {
@@ -111,22 +51,23 @@ func ping(conn net.Conn) bool {
 		Method:  "miner_ping"}
 
 	var res PingResponse
-	makeReq(conn, ping, &res)
-	if res.Result == "pong" {
-		return true
+	if err := makeReq(conn, ping, &res); err != nil {
+		return false
 	}
-	return false
+	return res.Result == "pong"
 }
 
-func getStat(conn net.Conn) MinerStatResponse {
+func getStat(conn net.Conn) (*MinerStatResponse, error) {
 	statReq := JsonRPCRequest{
 		Id:      1,
 		JsonRpc: "2.0",
 		Method:  "miner_getstatdetail"}
 
 	var stat MinerStatResponse
-	makeReq(conn, statReq, &stat)
-	return stat
+	if err := makeReq(conn, statReq, &stat); err != nil {
+		return nil, err
+	}
+	return &stat, nil
 }
 
 func getConn(wrkAddr string) net.Conn {
@@ -140,6 +81,7 @@ func getConn(wrkAddr string) net.Conn {
 		println("Dial failed:", err.Error())
 		os.Exit(1)
 	}
+	fmt.Println("Connected to woker at ", conn.RemoteAddr())
 	return conn
 }
 
@@ -156,11 +98,18 @@ func hexToF(h string) float64 {
 }
 
 func storeStat(conn net.Conn, db *bolt.DB) {
-	r := getStat(conn)
+	r, err := getStat(conn)
+	if err != nil {
+		return
+	}
+	res := r.Result
 	hrHex := r.Result.Mining.Hashrate
+	hr := hexToF(hrHex)
 	host := r.Result.Host.Name
-	fmt.Print(host)
-	fmt.Printf("\tHashrate = %.2f MH/s\n", hexToF(hrHex))
+	uri := r.Result.Connection.URI
+	wrkName := s.Split(s.Split(uri, "@")[0], ".")[1]
+	fmt.Print(host + "\t" + wrkName)
+	fmt.Printf("\tHashrate = %.2f MH/s\n", hr)
 	r.Result.CreatedAt = time.Now()
 	val, err := json.Marshal(r.Result)
 	db.Update(func(tx *bolt.Tx) error {
@@ -168,6 +117,46 @@ func storeStat(conn net.Conn, db *bolt.DB) {
 		ns, _ := b.NextSequence()
 		k := int(ns)
 		return b.Put(itob(k), val)
+	})
+	if err != nil {
+		panic("Error updating db!")
+	}
+	var pwr float64 = 0.0
+	var devStat = make([]DeviceStat, len(res.Devices))
+	for i := 0; i < len(res.Devices); i++ {
+		d := res.Devices[i]
+		sen := d.Hardware.Sensors
+		pwr = pwr + d.Hardware.Sensors[2]
+		devStat[0] = DeviceStat{
+			Id:          d.Index,
+			Device_type: d.Hardware.Type,
+			Mode:        d.Mode,
+			Name:        d.Hardware.Name,
+			Hashrate:    hexToF(d.Mining.Hashrate),
+			Paused:      d.Mining.Paused,
+			Shares:      d.Mining.Shares,
+			Temperature: sen[0],
+			Fan:         sen[1],
+			Power:       sen[2],
+		}
+	}
+	db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("rigs"))
+		k := host + "-" + wrkName
+		ws, _ := json.Marshal(WorkerStat{
+			Name:       wrkName,
+			Hostname:   host,
+			Address:    conn.RemoteAddr().String(),
+			Connected:  res.Connection.Connected,
+			URI:        uri,
+			Runtime:    float64(res.Host.Runtime),
+			Hashrate:   hr,
+			Difficulty: res.Mining.Difficulty,
+			Shares:     res.Mining.Shares,
+			Devices:    devStat,
+			Power:      pwr,
+		})
+		return b.Put([]byte(k), ws)
 	})
 	if err != nil {
 		panic("Error updating db!")
@@ -195,17 +184,22 @@ func main() {
 		}
 		return nil
 	})
+	db.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists([]byte("rigs"))
+		if err != nil {
+			panic(err)
+		}
+		return nil
+	})
 
 	wrkAddr := "192.168.0.103:9033"
 	conn := getConn(wrkAddr)
 
 	executeStatFetchJob(conn, db, 5)
 
+	fmt.Println("Starting API server on localhost:8088")
 	fmt.Println("Press Ctrl+C to quit!")
-	fmt.Scanln() // remove after implementing api server
+	state := &AppState{db}
+	runApi(state)
 	defer conn.Close()
-	// fmt.Println("Starting API server")
-	// if err := http.ListenAndServe(":8088", http.HandlerFunc(todo)); err != nil {
-	//   panic(err)
-	// }
 }

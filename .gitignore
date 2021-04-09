@@ -160,3 +160,4 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/go,osx,vscode,emacs,vim,windows
 
 dione
+temp_*
