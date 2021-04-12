@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="utf-8">
+    <meta http-equiv="refresh" content="15">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dione - Miner stats</title>
     <link rel="stylesheet" href="/public/assets/css/pure-min.css">
@@ -101,25 +102,6 @@
                             <span style="font-size: 10px;line-height: 10px;">power</span>
                         </p>
                     </div>
-                    <p style="font-weight: bold;">Devices</p>
-                    {{ range $d := $val.Devices}}
-                    <div>
-                        <p style="margin-top: 0;">{{$d.Name}} - {{$d.Mode}}</p>
-                        <div style="display: flex;
-                    flex-direction: row;
-                    justify-content: space-around;">
-                            <div>
-                                <p style="margin: 0;">Temperature: {{ $d.Temperature | printf "%.0f"}} C</p>
-                                <p style="margin: 0;">Fan: {{$d.Fan}}%</p>
-                                <p style="margin: 0;">Power: {{$d.Power | printf "%0.2f"}} Watts</p>
-                            </div>
-                            <p class="device_hashrate" title="Hash rate for this device">
-                                {{$d.Hashrate | printf "%0.2f"}}
-                                <span style="font-size: 10px;line-height: 10px;">MH/s</span>
-                            </p>
-                        </div>
-                    </div>
-                    {{end}}
                     <p style="font-weight: bold;">Shares</p>
                     <div class="square_container">
                         <div class="square">
@@ -139,6 +121,44 @@
                             <span class="small">time(sec) last found</span>
                         </div>
                     </div>
+                    <p style="font-weight: bold;">Devices</p>
+                    {{ range $d := $val.Devices}}
+                    <div style="border-bottom: 1px solid #2d3e50;margin-bottom: 1em;">
+                        <p style="margin-top: 0;">{{$d.Name}} - {{$d.Mode}}</p>
+                        <div style="display: flex;
+                    flex-direction: row;
+                    justify-content: space-around;">
+                            <div>
+                                <p style="margin: 0;">Temperature: {{ $d.Temperature | printf "%.0f"}} C</p>
+                                <p style="margin: 0;">Fan: {{$d.Fan}}%</p>
+                                <p style="margin: 0;">Power: {{$d.Power | printf "%0.2f"}} Watts</p>
+                            </div>
+                            <p class="device_hashrate" title="Hash rate for this device">
+                                {{$d.Hashrate | printf "%0.2f"}}
+                                <span style="font-size: 10px;line-height: 10px;">MH/s</span>
+                            </p>
+                        </div>
+                        <p style="font-weight: bold;">Shares</p>
+                        <div class="square_container">
+                            <div class="square">
+                                <span class="amount">{{index $d.Shares 0}}</span>
+                                <span>found</span>
+                            </div>
+                            <div class="square">
+                                <span class="amount">{{index $d.Shares 1}}</span>
+                                <span>rejected</span>
+                            </div>
+                            <div class="square">
+                                <span class="amount">{{index $d.Shares 2}}</span>
+                                <span>failed</span>
+                            </div>
+                            <div class="square">
+                                <span class="amount">{{index $d.Shares 3}}</span>
+                                <span class="small">time(sec) last found</span>
+                            </div>
+                        </div>
+                    </div>
+                    {{end}}
                 </div>
                 {{ end }}
             </div>

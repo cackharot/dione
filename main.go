@@ -198,7 +198,7 @@ func setupDb() *bolt.DB {
 
 func createPool(addr string) pool.Pool {
 	factory := func() (interface{}, error) {
-		return net.DialTimeout("tcp", addr, 5)
+		return net.DialTimeout("tcp", addr, 5*time.Second)
 	}
 	close := func(v interface{}) error { return v.(net.Conn).Close() }
 	poolConfig := &pool.Config{
