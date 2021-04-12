@@ -40,8 +40,27 @@
                         </p>
                     </div>
                     <p class="hashrate">{{.stat.Hashrate | printf "%0.2f"}} MH/s</p>
+                    <p style="font-weight: bold;">Shares</p>
+                    <div class="square_container">
+                        <div class="square">
+                            <span class="amount">{{index .stat.Shares 0}}</span>
+                            <span>found</span>
+                        </div>
+                        <div class="square">
+                            <span class="amount">{{index .stat.Shares 1}}</span>
+                            <span>rejected</span>
+                        </div>
+                        <div class="square">
+                            <span class="amount">{{index .stat.Shares 2}}</span>
+                            <span>failed</span>
+                        </div>
+                        <div class="square">
+                            <span class="amount">{{index .stat.Shares 3}}</span>
+                            <span class="small">time(sec) last found</span>
+                        </div>
+                    </div>
                     <p style="font-weight: bold;">Power Costs Estimates</p>
-                    <div class="power_cost">
+                    <div class="square_container">
                         <div class="square">
                             <span class="amount">${{.stat.PowerCost | printf "%0.2f"}}</span> <br />
                             <span class="amount">₹{{inr .stat.PowerCost | printf "%0.2f"}}</span><br />
@@ -53,7 +72,7 @@
                             <span>week</span>
                         </div>
                     </div>
-                    <div class="power_cost">
+                    <div class="square_container">
                         <div class="square">
                             <span class="amount">${{(multiply .stat.PowerCost 30) | printf "%0.2f"}}</span> <br />
                             <span class="amount">₹{{inr (multiply .stat.PowerCost 30) | printf "%0.2f"}}</span><br />
@@ -101,6 +120,25 @@
                         </div>
                     </div>
                     {{end}}
+                    <p style="font-weight: bold;">Shares</p>
+                    <div class="square_container">
+                        <div class="square">
+                            <span class="amount">{{index $val.Shares 0}}</span>
+                            <span>found</span>
+                        </div>
+                        <div class="square">
+                            <span class="amount">{{index $val.Shares 1}}</span>
+                            <span>rejected</span>
+                        </div>
+                        <div class="square">
+                            <span class="amount">{{index $val.Shares 2}}</span>
+                            <span>failed</span>
+                        </div>
+                        <div class="square">
+                            <span class="amount">{{index $val.Shares 3}}</span>
+                            <span class="small">time(sec) last found</span>
+                        </div>
+                    </div>
                 </div>
                 {{ end }}
             </div>

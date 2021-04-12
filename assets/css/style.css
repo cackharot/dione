@@ -128,55 +128,8 @@ a.pure-button-primary {
     color: #AECFE5;
 }
 
-
-/*
- * -- SPLASH STYLES --
- * This is the blue top section that appears on the page.
- */
-
-.splash-container {
-    background: #1f8dd6;
-    z-index: 1;
-    overflow: hidden;
-    /* The following styles are required for the "scroll-over" effect */
-    width: 100%;
-    height: 88%;
-    top: 0;
-    left: 0;
-    position: fixed !important;
-}
-
-.splash {
-    /* absolute center .splash within .splash-container */
-    width: 80%;
-    height: 50%;
-    margin: auto;
-    position: absolute;
-    top: 100px;
-    left: 0;
-    bottom: 0;
-    right: 0;
-    text-align: center;
-    text-transform: uppercase;
-}
-
-/* This is the main heading that appears on the blue section */
-.splash-head {
-    font-size: 20px;
-    font-weight: bold;
-    color: white;
-    border: 3px solid white;
-    padding: 1em 1.6em;
-    font-weight: 100;
-    border-radius: 5px;
-    line-height: 1em;
-}
-
-/* This is the subheading that appears on the blue section */
-.splash-subhead {
-    color: white;
-    letter-spacing: 0.05em;
-    opacity: 0.8;
+.small {
+    font-size: 9px;
 }
 
 /*
@@ -322,14 +275,14 @@ a.pure-button-primary {
     background: #219EBC;
 }
 
-.power_cost {
+.square_container {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
     margin-bottom: 0.4em;
 }
 
-.power_cost .square {
+.square_container .square {
     background: #FFB703;
     border: 1px solid #FFB703;
     color: #fff;
@@ -340,13 +293,16 @@ a.pure-button-primary {
     text-align: center;
     font-size: 16px;
     font-weight: 400;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
-.power_cost .square span {
+.square_container .square span {
     display: inline-block;
 }
 
-.power_cost .square .amount {
+.square_container .square .amount {
     font-size: 24px;
     font-weight: bolder;
     line-height: 1.5em;

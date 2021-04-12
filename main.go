@@ -2,14 +2,11 @@ package main
 
 import (
 	"bufio"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"net"
 	"os"
-	"strconv"
 	s "strings"
 	"time"
 
@@ -40,8 +37,7 @@ func makeReq(conn net.Conn, payload JsonRPCRequest, res interface{}) error {
 		}
 		return nil
 	}
-	fmt.Println("Empty response from worker api. Not good!")
-	return errors.New("Empty response from worker api. Not good!")
+	return errors.New("empty response from worker api, not good")
 }
 
 func ping(conn net.Conn) bool {
@@ -83,18 +79,6 @@ func getConn(wrkAddr string) net.Conn {
 	}
 	fmt.Println("Connected to woker at ", conn.RemoteAddr())
 	return conn
-}
-
-// itob returns an 8-byte big endian representation of v.
-func itob(v int) []byte {
-	b := make([]byte, 8)
-	binary.BigEndian.PutUint64(b, uint64(v))
-	return b
-}
-
-func hexToF(h string) float64 {
-	f, _ := strconv.ParseUint(h[2:], 16, 32)
-	return math.Round(float64(f)) / math.Pow(10, 6)
 }
 
 func storeStat(conn net.Conn, db *bolt.DB) {
@@ -141,8 +125,7 @@ func storeStat(conn net.Conn, db *bolt.DB) {
 			Power:       sen[2],
 		}
 	}
-	// s, _ := json.Marshal(res.Devices)
-	// println(wrkName, string(s))
+
 	db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("rigs"))
 		k := host + "-" + wrkName
@@ -177,13 +160,6 @@ func executeStatFetchJob(conns []net.Conn, db *bolt.DB, t int) {
 	s.StartAsync()
 }
 
-func getEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
-	}
-	return fallback
-}
-
 func main() {
 	path := getEnv("DIONE_DB_PATH", "/tmp/dione-stats.db")
 	db, err := bolt.Open(path, 0666, &bolt.Options{Timeout: 1 * time.Second})
@@ -205,7 +181,7 @@ func main() {
 		return nil
 	})
 
-	wrkAddrs := s.Split(getEnv("DIONE_WORKER_ADDRESS", "192.168.0.103:9033,192.168.0.104:9033"), ",")
+	wrkAddrs := s.Split(getEnv("DIONE_WORKER_ADDRESS", "192.168.0.110:9033"), ",")
 	var conns []net.Conn
 	for _, wrkAddr := range wrkAddrs {
 		c := getConn(wrkAddr)
