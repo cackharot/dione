@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-co-op/gocron"
+	"github.com/silenceper/pool"
 
 	bolt "go.etcd.io/bbolt"
 )
@@ -66,25 +67,25 @@ func getStat(conn net.Conn) (*MinerStatResponse, error) {
 	return &stat, nil
 }
 
-func getConn(wrkAddr string) net.Conn {
+func getConn(wrkAddr string) (net.Conn, error) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", wrkAddr)
 	if err != nil {
 		println("ResolveTCPAddr failed:", err.Error())
-		os.Exit(1)
+		return nil, err
 	}
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
 		println("Dial failed:", err.Error())
-		os.Exit(1)
+		return nil, err
 	}
 	fmt.Println("Connected to woker at ", conn.RemoteAddr())
-	return conn
+	return conn, nil
 }
 
-func storeStat(conn net.Conn, db *bolt.DB) {
+func storeStat(conn net.Conn, db *bolt.DB) error {
 	r, err := getStat(conn)
 	if err != nil {
-		return
+		return err
 	}
 	res := r.Result
 	hrHex := r.Result.Mining.Hashrate
@@ -104,7 +105,7 @@ func storeStat(conn net.Conn, db *bolt.DB) {
 	})
 	if err != nil {
 		fmt.Println("Unable to update stats in db!", err)
-		return
+		return err
 	}
 	var pwr float64 = 0.0
 	var devStat = make([]DeviceStat, len(res.Devices))
@@ -146,21 +147,33 @@ func storeStat(conn net.Conn, db *bolt.DB) {
 	})
 	if err != nil {
 		fmt.Println("Unable to update stats in db!", err)
+		return err
 	}
+	return nil
 }
 
-func executeStatFetchJob(conns []net.Conn, db *bolt.DB, t int) {
+func executeStatFetchJob(wrkAddrs []string, db *bolt.DB, t int) {
 	s := gocron.NewScheduler(time.UTC)
-	for _, conn := range conns {
-		conn := conn
+	for _, wrkAddr := range wrkAddrs {
+		wrkAddr := wrkAddr
+		pl := createPool(wrkAddr)
 		s.Every(t).Second().Do(func() {
-			storeStat(conn, db)
+			v, err := pl.Get()
+			if err != nil {
+				fmt.Println("Unable to connect to "+wrkAddr, err)
+			}
+			conn := v.(net.Conn)
+			err1 := storeStat(conn, db)
+			pl.Put(v)
+			if err1 != nil {
+				fmt.Println("Unable to store stats", err)
+			}
 		})
 	}
 	s.StartAsync()
 }
 
-func main() {
+func setupDb() *bolt.DB {
 	path := getEnv("DIONE_DB_PATH", "/tmp/dione-stats.db")
 	db, err := bolt.Open(path, 0666, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
@@ -180,20 +193,39 @@ func main() {
 		}
 		return nil
 	})
+	return db
+}
+
+func createPool(addr string) pool.Pool {
+	factory := func() (interface{}, error) {
+		return net.DialTimeout("tcp", addr, 5)
+	}
+	close := func(v interface{}) error { return v.(net.Conn).Close() }
+	poolConfig := &pool.Config{
+		InitialCap:  2,
+		MaxIdle:     4,
+		MaxCap:      5,
+		Factory:     factory,
+		Close:       close,
+		IdleTimeout: 15 * time.Second,
+	}
+	p, err := pool.NewChannelPool(poolConfig)
+	if err != nil {
+		fmt.Println("err=", err)
+		os.Exit(1)
+	}
+	fmt.Println("Tcp conn pool created: ", p.Len())
+	return p
+}
+
+func main() {
+	db := setupDb()
 
 	wrkAddrs := s.Split(getEnv("DIONE_WORKER_ADDRESS", "192.168.0.110:9033"), ",")
-	var conns []net.Conn
-	for _, wrkAddr := range wrkAddrs {
-		c := getConn(wrkAddr)
-		conns = append(conns, c)
-	}
-	executeStatFetchJob(conns, db, 5)
+	executeStatFetchJob(wrkAddrs, db, 5)
 
 	fmt.Println("Starting API server on localhost:8088")
 	fmt.Println("Press Ctrl+C to quit!")
 	state := &AppState{db}
 	runApi(state)
-	for _, conn := range conns {
-		defer conn.Close()
-	}
 }
