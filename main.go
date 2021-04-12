@@ -108,8 +108,8 @@ func storeStat(conn net.Conn, db *bolt.DB) {
 	host := r.Result.Host.Name
 	uri := r.Result.Connection.URI
 	wrkName := s.Split(s.Split(uri, "@")[0], ".")[1]
-	fmt.Print(host + "\t" + wrkName)
-	fmt.Printf("\tHashrate = %.2f MH/s\n", hr)
+	// fmt.Print(host + "\t" + wrkName)
+	// fmt.Printf("\tHashrate = %.2f MH/s\n", hr)
 	r.Result.CreatedAt = time.Now()
 	val, err := json.Marshal(r.Result)
 	db.Update(func(tx *bolt.Tx) error {
@@ -119,7 +119,8 @@ func storeStat(conn net.Conn, db *bolt.DB) {
 		return b.Put(itob(k), val)
 	})
 	if err != nil {
-		panic("Error updating db!")
+		fmt.Println("Unable to update stats in db!", err)
+		return
 	}
 	var pwr float64 = 0.0
 	var devStat = make([]DeviceStat, len(res.Devices))
@@ -127,7 +128,7 @@ func storeStat(conn net.Conn, db *bolt.DB) {
 		d := res.Devices[i]
 		sen := d.Hardware.Sensors
 		pwr = pwr + d.Hardware.Sensors[2]
-		devStat[0] = DeviceStat{
+		devStat[i] = DeviceStat{
 			Id:          d.Index,
 			Device_type: d.Hardware.Type,
 			Mode:        d.Mode,
@@ -140,6 +141,8 @@ func storeStat(conn net.Conn, db *bolt.DB) {
 			Power:       sen[2],
 		}
 	}
+	// s, _ := json.Marshal(res.Devices)
+	// println(wrkName, string(s))
 	db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("rigs"))
 		k := host + "-" + wrkName
@@ -159,20 +162,30 @@ func storeStat(conn net.Conn, db *bolt.DB) {
 		return b.Put([]byte(k), ws)
 	})
 	if err != nil {
-		panic("Error updating db!")
+		fmt.Println("Unable to update stats in db!", err)
 	}
 }
 
-func executeStatFetchJob(conn net.Conn, db *bolt.DB, t int) {
+func executeStatFetchJob(conns []net.Conn, db *bolt.DB, t int) {
 	s := gocron.NewScheduler(time.UTC)
-	s.Every(t).Second().Do(func() {
-		storeStat(conn, db)
-	})
+	for _, conn := range conns {
+		conn := conn
+		s.Every(t).Second().Do(func() {
+			storeStat(conn, db)
+		})
+	}
 	s.StartAsync()
 }
 
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
 func main() {
-	path := "/tmp/dione-stats.db"
+	path := getEnv("DIONE_DB_PATH", "/tmp/dione-stats.db")
 	db, err := bolt.Open(path, 0666, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		panic(err)
@@ -192,14 +205,19 @@ func main() {
 		return nil
 	})
 
-	wrkAddr := "192.168.0.103:9033"
-	conn := getConn(wrkAddr)
-
-	executeStatFetchJob(conn, db, 5)
+	wrkAddrs := s.Split(getEnv("DIONE_WORKER_ADDRESS", "192.168.0.103:9033,192.168.0.104:9033"), ",")
+	var conns []net.Conn
+	for _, wrkAddr := range wrkAddrs {
+		c := getConn(wrkAddr)
+		conns = append(conns, c)
+	}
+	executeStatFetchJob(conns, db, 5)
 
 	fmt.Println("Starting API server on localhost:8088")
 	fmt.Println("Press Ctrl+C to quit!")
 	state := &AppState{db}
 	runApi(state)
-	defer conn.Close()
+	for _, conn := range conns {
+		defer conn.Close()
+	}
 }

@@ -1,8 +1,8 @@
 package main
 
 import (
+	"embed"
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"net/http"
 
@@ -10,6 +10,9 @@ import (
 
 	bolt "go.etcd.io/bbolt"
 )
+
+//go:embed assets/css/* assets/img/* templates/*
+var f embed.FS
 
 func runApi(state *AppState) {
 	r := gin.Default()
@@ -24,10 +27,15 @@ func runApi(state *AppState) {
 			return a * b
 		},
 	}
+	templ := template.Must(template.New("").Funcs(fm).ParseFS(f, "templates/*.tmpl"))
+	r.SetHTMLTemplate(templ)
 	r.SetFuncMap(fm)
-	r.Static("/assets", "./assets")
-	r.StaticFile("/favicon.ico", "./assets/img/favicon.ico")
-	r.LoadHTMLGlob("templates/*")
+
+	r.StaticFS("/public", http.FS(f))
+	r.GET("/favicon.ico", func(c *gin.Context) {
+		c.FileFromFS("assets/img/favicon.ico", http.FS(f))
+	})
+
 	r.GET("/", func(c *gin.Context) {
 		lst := make([]WorkerStat, 0)
 		state.db.View(func(tx *bolt.Tx) error {
@@ -55,7 +63,6 @@ func runApi(state *AppState) {
 			gs.Hashrate = gs.Hashrate + v.Hashrate
 			gs.Power = gs.Power + v.Power
 			gs.Devices = gs.Devices + len(v.Devices)
-			fmt.Println(v.Shares)
 			for sidx, s := range v.Shares {
 				gs.Shares[sidx] = gs.Shares[sidx] + s
 			}

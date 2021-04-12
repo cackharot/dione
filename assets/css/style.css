@@ -326,6 +326,7 @@ a.pure-button-primary {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
+    margin-bottom: 0.4em;
 }
 
 .power_cost .square {
@@ -343,6 +344,12 @@ a.pure-button-primary {
 
 .power_cost .square span {
     display: inline-block;
+}
+
+.power_cost .square .amount {
+    font-size: 24px;
+    font-weight: bolder;
+    line-height: 1.5em;
 }
 
 /*
