@@ -1,8 +1,6 @@
 package main
 
 import (
-	"time"
-
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -22,8 +20,7 @@ type MinerStatResponse struct {
 	ID      int    `json:"id"`
 	Jsonrpc string `json:"jsonrpc"`
 	Result  struct {
-		ID         int       `json:"id"`
-		CreatedAt  time.Time `json:"created_at"`
+		ID         int `json:"id"`
 		Connection struct {
 			Connected bool   `json:"connected"`
 			Switches  int    `json:"switches"`

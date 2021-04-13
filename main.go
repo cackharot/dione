@@ -93,20 +93,7 @@ func storeStat(conn net.Conn, db *bolt.DB) error {
 	host := r.Result.Host.Name
 	uri := r.Result.Connection.URI
 	wrkName := s.Split(s.Split(uri, "@")[0], ".")[1]
-	// fmt.Print(host + "\t" + wrkName)
-	// fmt.Printf("\tHashrate = %.2f MH/s\n", hr)
-	r.Result.CreatedAt = time.Now()
-	val, err := json.Marshal(r.Result)
-	db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("stats"))
-		ns, _ := b.NextSequence()
-		k := int(ns)
-		return b.Put(itob(k), val)
-	})
-	if err != nil {
-		fmt.Println("Unable to update stats in db!", err)
-		return err
-	}
+
 	var pwr float64 = 0.0
 	var devStat = make([]DeviceStat, len(res.Devices))
 	for i := 0; i < len(res.Devices); i++ {
@@ -127,29 +114,61 @@ func storeStat(conn net.Conn, db *bolt.DB) error {
 		}
 	}
 
+	ws, _ := json.Marshal(WorkerStat{
+		Name:       wrkName,
+		Hostname:   host,
+		Address:    conn.RemoteAddr().String(),
+		Connected:  res.Connection.Connected,
+		URI:        uri,
+		Runtime:    float64(res.Host.Runtime),
+		Hashrate:   hr,
+		Difficulty: res.Mining.Difficulty,
+		Shares:     res.Mining.Shares,
+		Devices:    devStat,
+		Power:      pwr,
+	})
+
 	db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("rigs"))
 		k := host + "-" + wrkName
-		ws, _ := json.Marshal(WorkerStat{
-			Name:       wrkName,
-			Hostname:   host,
-			Address:    conn.RemoteAddr().String(),
-			Connected:  res.Connection.Connected,
-			URI:        uri,
-			Runtime:    float64(res.Host.Runtime),
-			Hashrate:   hr,
-			Difficulty: res.Mining.Difficulty,
-			Shares:     res.Mining.Shares,
-			Devices:    devStat,
-			Power:      pwr,
-		})
 		return b.Put([]byte(k), ws)
 	})
 	if err != nil {
 		fmt.Println("Unable to update stats in db!", err)
 		return err
 	}
+
+	db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("stats"))
+		// ns, _ := b.NextSequence()
+		// k := int(ns)
+		k := time.Now().Format(time.RFC3339)
+		return b.Put([]byte(k), ws)
+	})
+	if err != nil {
+		fmt.Println("Unable to update stats in db!", err)
+		return err
+	}
+
 	return nil
+}
+
+func markWorkerOffline(wrkAddr string, db *bolt.DB) {
+	db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("rigs"))
+		c := b.Cursor()
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			item := WorkerStat{}
+			json.Unmarshal(v, &item)
+			if item.Address != wrkAddr {
+				continue
+			}
+			item.Connected = false
+			ws, _ := json.Marshal(item)
+			b.Put([]byte(k), ws)
+		}
+		return nil
+	})
 }
 
 func executeStatFetchJob(wrkAddrs []string, db *bolt.DB, t int) {
@@ -161,13 +180,14 @@ func executeStatFetchJob(wrkAddrs []string, db *bolt.DB, t int) {
 			v, err := pl.Get()
 			if err != nil {
 				fmt.Println("Unable to connect to "+wrkAddr, err)
+				markWorkerOffline(wrkAddr, db)
 				return
 			}
 			conn := v.(net.Conn)
 			err1 := storeStat(conn, db)
 			pl.Put(v)
 			if err1 != nil {
-				fmt.Println("Unable to store stats", err)
+				fmt.Println("Unable to store stats", err1)
 				return
 			}
 		})
