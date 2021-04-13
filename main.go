@@ -161,12 +161,14 @@ func executeStatFetchJob(wrkAddrs []string, db *bolt.DB, t int) {
 			v, err := pl.Get()
 			if err != nil {
 				fmt.Println("Unable to connect to "+wrkAddr, err)
+				return
 			}
 			conn := v.(net.Conn)
 			err1 := storeStat(conn, db)
 			pl.Put(v)
 			if err1 != nil {
 				fmt.Println("Unable to store stats", err)
+				return
 			}
 		})
 	}
