@@ -12,6 +12,7 @@ body {
     line-height: 1.7em;
     color: #7f8c8d;
     font-size: 13px;
+    background: #EFF1F7;
 }
 
 h1,
@@ -46,7 +47,9 @@ label {
     text-align: center;
 }
 
-
+.small {
+    font-size: 9px !important;
+}
 
 /*
  * -- PURE FORM STYLES --
@@ -128,10 +131,6 @@ a.pure-button-primary {
     color: #AECFE5;
 }
 
-.small {
-    font-size: 9px;
-}
-
 /*
  * -- CONTENT STYLES --
  * This represents the content area (everything below the blue section)
@@ -187,12 +186,12 @@ a.pure-button-primary {
 }
 
 .worker_container {
-    border-radius: 5px;
-    border: 1px solid #023047;
-    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.10);
+    /* border-bottom: 1px solid #023047; */
+    /* box-shadow: 0 1px 1px rgba(0, 0, 0, 0.10); */
     display: flex;
     width: 100%;
     padding: 6px;
+    padding-bottom: 1em;
     flex-direction: column;
     position: relative;
     margin-bottom: 1em;
@@ -276,30 +275,73 @@ a.pure-button-primary {
 }
 
 .square_container {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    margin-bottom: 0.4em;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-gap: 30px;
+    /* margin-bottom: 30px; */
 }
 
 .square_container .square {
-    background: #FFB703;
-    border: 1px solid #FFB703;
-    color: #fff;
-    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.10);
-    padding: 0.3em 0.2em;
-    margin: 0px 2px;
-    width: 100%;
-    text-align: center;
-    font-size: 16px;
-    font-weight: 400;
     display: flex;
-    flex-direction: column;
+    background-color: #fff;
+    border-radius: 10px;
+    transition: 0.5s;
+    padding: 43px 30px;
+    position: relative;
+    align-items: center;
     justify-content: center;
 }
 
-.square_container .square span {
-    display: inline-block;
+.square_container .square .icon {
+    width: 60px;
+    height: 60px;
+    flex-basis: 60px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+}
+
+.square_container .square .icon img {
+    width: 100%;
+    height: 70%;
+}
+
+.square_container .square .content {
+    margin-left: 10px;
+    flex-basis: 65%;
+    text-align: right;
+    padding: 0;
+}
+
+.square_container.shares .square .content {
+    margin-left: 10px;
+    flex-basis: 100%;
+    text-align: center;
+    padding: 0;
+}
+
+.square_container .square h3 {
+    font-size: 24px;
+    margin-bottom: 0;
+    font-weight: 600;
+    transition: 0.5s;
+    color: #2E4765;
+    margin: 0px;
+    margin-top: 10px;
+    /* font-family: "Rajdhani", sans-serif; */
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.square_container .square p {
+    transition: 0.5s;
+    font-size: 16px;
+    font-weight: 500;
+    color: #B2B5C0;
+    /* font-family: "Rajdhani", sans-serif; */
+    line-height: 1;
+    margin: 0;
+    margin-top: 6px;
 }
 
 .square_container .square .amount {
@@ -364,5 +406,23 @@ a.pure-button-primary {
     /* We increase the header font size even more */
     .splash-head {
         font-size: 300%;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .square_container .square {
+        padding: 10px 5px;
+    }
+
+    .square_container {
+        grid-template-columns: repeat(1, 1fr);
+        grid-gap: 15px;
+        /* margin-bottom: 30px; */
+    }
+
+    .square_container.shares {
+        grid-template-columns: repeat(4, 1fr);
+        grid-gap: 15px;
+        /* margin-bottom: 30px; */
     }
 }

@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta http-equiv="refresh" content="15">
+    <!-- <meta http-equiv="refresh" content="15"> -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dione - Miner stats</title>
     <link rel="stylesheet" href="/public/assets/css/pure-min.css">
@@ -16,7 +16,7 @@
             <a class="pure-menu-heading" href="/">Dione</a>
             <ul class="pure-menu-list">
                 <li class="pure-menu-item pure-menu-selected"><a href="/" class="pure-menu-link">Home</a></li>
-                <li class="pure-menu-item"><a href="/workers" class="pure-menu-link">Workers</a></li>
+                <li class="pure-menu-item"><a href="#workers" class="pure-menu-link">Workers</a></li>
                 <li class="pure-menu-item"><a href="/settings" class="pure-menu-link">Settings</a></li>
             </ul>
         </div>
@@ -42,47 +42,69 @@
                     </div>
                     <p class="hashrate">{{.stat.Hashrate | printf "%0.2f"}} MH/s</p>
                     <p style="font-weight: bold;">Shares</p>
-                    <div class="square_container">
+                    <div class="square_container shares">
                         <div class="square">
-                            <span class="amount">{{index .stat.Shares 0}}</span>
-                            <span>found</span>
+                            <div class="content">
+                                <h3>{{index .stat.Shares 0}}</h3>
+                                <p>found</p>
+                            </div>
                         </div>
                         <div class="square">
-                            <span class="amount">{{index .stat.Shares 1}}</span>
-                            <span>rejected</span>
+                            <div class="content">
+                                <h3 style="color: #FCAD73;">{{index .stat.Shares 1}}</h3>
+                                <p>rejected</p>
+                            </div>
                         </div>
                         <div class="square">
-                            <span class="amount">{{index .stat.Shares 2}}</span>
-                            <span>failed</span>
+                            <div class="content">
+                                <h3 style="color: #EA5D5D;">{{index .stat.Shares 2}}</h3>
+                                <p>failed</p>
+                            </div>
                         </div>
                         <div class="square">
-                            <span class="amount">{{index .stat.Shares 3}}</span>
-                            <span class="small">time(sec) last found</span>
+                            <div class="content">
+                                <h3>{{index .stat.Shares 3}}</h3>
+                                <p class="small">time(sec) last found</p>
+                            </div>
                         </div>
                     </div>
                     <p style="font-weight: bold;">Power Costs Estimates</p>
                     <div class="square_container">
                         <div class="square">
-                            <span class="amount">${{.stat.PowerCost | printf "%0.2f"}}</span> <br />
-                            <span class="amount">₹{{inr .stat.PowerCost | printf "%0.2f"}}</span><br />
-                            <span>day</span>
+                            <div class="icon">
+                                <img src="public/assets/img/power.svg" alt="">
+                            </div>
+                            <div class="content">
+                                <h3>${{.stat.PowerCost | printf "%0.2f"}} - ₹{{inr .stat.PowerCost | printf "%0.2f"}}
+                                </h3>
+                                <p>Day</p>
+                            </div>
                         </div>
                         <div class="square">
-                            <span class="amount">${{(multiply .stat.PowerCost 7) | printf "%0.2f"}}</span><br />
-                            <span class="amount">₹{{inr (multiply .stat.PowerCost 7) | printf "%0.2f"}}</span><br />
-                            <span>week</span>
+                            <div class="icon">
+                                <img src="public/assets/img/power.svg" alt="">
+                            </div>
+                            <div class="content">
+                                <h3>${{(multiply .stat.PowerCost 7) | printf "%0.2f"}} - ₹{{inr (multiply
+                                    .stat.PowerCost 7) | printf "%0.2f"}}</h3>
+                                <p>Week</p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="square_container">
                         <div class="square">
-                            <span class="amount">${{(multiply .stat.PowerCost 30) | printf "%0.2f"}}</span> <br />
-                            <span class="amount">₹{{inr (multiply .stat.PowerCost 30) | printf "%0.2f"}}</span><br />
-                            <span>month</span>
+                            <div class="icon">
+                                <img src="public/assets/img/power.svg" alt="">
+                            </div>
+                            <div class="content">
+                                <h3 style="color: #2DAAB8;">${{(multiply .stat.PowerCost 30) | printf "%0.2f"}} - ₹{{inr (multiply
+                                    .stat.PowerCost 30) | printf "%0.2f"}}</h3>
+                                <p>Month</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <h3 style="margin: 0;">Workers</h3>
+            <hr /><br />
+            <h3 id="workers" style="margin: 0;">Workers</h3>
             <div class="pure-g">
                 {{ range $val := .items }}
                 <div class="pure-u-1-3 worker_container">
@@ -103,27 +125,37 @@
                         </p>
                     </div>
                     <p style="font-weight: bold;">Shares</p>
-                    <div class="square_container">
+                    <div class="square_container shares">
                         <div class="square">
-                            <span class="amount">{{index $val.Shares 0}}</span>
-                            <span>found</span>
+                            <div class="content">
+                                <h3>{{index $val.Shares 0}}</h3>
+                                <p>found</p>
+                            </div>
                         </div>
                         <div class="square">
-                            <span class="amount">{{index $val.Shares 1}}</span>
-                            <span>rejected</span>
+                            <div class="content">
+                                <h3 style="color: #FCAD73;">{{index $val.Shares 1}}</h3>
+                                <p>rejected</p>
+                            </div>
                         </div>
                         <div class="square">
-                            <span class="amount">{{index $val.Shares 2}}</span>
-                            <span>failed</span>
+                            <div class="content">
+                                <h3 style="color: #EA5D5D;">{{index $val.Shares 2}}</h3>
+                                <p>failed</p>
+                            </div>
                         </div>
                         <div class="square">
-                            <span class="amount">{{index $val.Shares 3}}</span>
-                            <span class="small">time(sec) last found</span>
+                            <div class="content">
+                                <h3>{{index $val.Shares 3}}</h3>
+                                <p class="small">
+                                    time(sec) last found
+                                </p>
+                            </div>
                         </div>
                     </div>
                     <p style="font-weight: bold;">Devices</p>
                     {{ range $d := $val.Devices}}
-                    <div style="border-bottom: 1px solid #2d3e50;margin-bottom: 1em;">
+                    <div style="border-bottom: 1px solid #2d3e50;margin-bottom: 1em;padding-bottom: 1em;">
                         <p style="margin-top: 0;">{{$d.Name}} - {{$d.Mode}}</p>
                         <div style="display: flex;
                     flex-direction: row;
@@ -139,22 +171,32 @@
                             </p>
                         </div>
                         <p style="font-weight: bold;">Shares</p>
-                        <div class="square_container">
+                        <div class="square_container shares">
                             <div class="square">
-                                <span class="amount">{{index $d.Shares 0}}</span>
-                                <span>found</span>
+                                <div class="content">
+                                    <h3>{{index $d.Shares 0}}</h3>
+                                    <p>found</p>
+                                </div>
                             </div>
                             <div class="square">
-                                <span class="amount">{{index $d.Shares 1}}</span>
-                                <span>rejected</span>
+                                <div class="content">
+                                    <h3 style="color: #FCAD73;">{{index $d.Shares 1}}</h3>
+                                    <p>rejected</p>
+                                </div>
                             </div>
                             <div class="square">
-                                <span class="amount">{{index $d.Shares 2}}</span>
-                                <span>failed</span>
+                                <div class="content">
+                                    <h3 style="color: #EA5D5D;">{{index $d.Shares 2}}</h3>
+                                    <p>failed</p>
+                                </div>
                             </div>
                             <div class="square">
-                                <span class="amount">{{index $d.Shares 3}}</span>
-                                <span class="small">time(sec) last found</span>
+                                <div class="content">
+                                    <h3>{{index $d.Shares 3}}</h3>
+                                    <p class="small">
+                                        time(sec) last found
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
