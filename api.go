@@ -11,7 +11,7 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
-//go:embed assets/css/* assets/img/* templates/*
+//go:embed assets/css/* assets/img/* assets/fonts/* templates/*
 var f embed.FS
 
 func runApi(state *AppState) {

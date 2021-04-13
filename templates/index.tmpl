@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <!-- <meta http-equiv="refresh" content="15"> -->
+    <meta http-equiv="refresh" content="15">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dione - Miner stats</title>
     <link rel="stylesheet" href="/public/assets/css/pure-min.css">
@@ -156,7 +156,7 @@
                     <p style="font-weight: bold;">Devices</p>
                     {{ range $d := $val.Devices}}
                     <div style="border-bottom: 1px solid #2d3e50;margin-bottom: 1em;padding-bottom: 1em;">
-                        <p style="margin-top: 0;">{{$d.Name}} - {{$d.Mode}}</p>
+                        <p style="margin-top: 0;color: #023047;">{{$d.Name}} - {{$d.Mode}}</p>
                         <div style="display: flex;
                     flex-direction: row;
                     justify-content: space-around;">

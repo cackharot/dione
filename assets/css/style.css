@@ -1,3 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+
+@font-face {
+    font-family: 'Jura';
+    src: url('../fonts/Jura.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
 * {
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
@@ -13,6 +22,7 @@ body {
     color: #7f8c8d;
     font-size: 13px;
     background: #EFF1F7;
+    font-family: 'Roboto', sans-serif;
 }
 
 h1,
@@ -230,6 +240,7 @@ a.pure-button-primary {
     font-weight: bolder;
     text-align: center;
     color: #FB8500;
+    font-family: "Jura", sans-serif;
 }
 
 .worker_container .devices_count,
@@ -244,6 +255,7 @@ a.pure-button-primary {
     align-self: center;
     font-weight: 400;
     color: #219EBC;
+    font-family: "Jura", sans-serif;
 }
 
 .dot {
@@ -272,6 +284,10 @@ a.pure-button-primary {
     flex-direction: column;
     justify-content: center;
     background: #219EBC;
+}
+
+.dot2.power {
+    font-family: "Jura", sans-serif;
 }
 
 .square_container {
@@ -328,7 +344,7 @@ a.pure-button-primary {
     color: #2E4765;
     margin: 0px;
     margin-top: 10px;
-    /* font-family: "Rajdhani", sans-serif; */
+    font-family: "Jura", sans-serif;
     line-height: 1;
     white-space: nowrap;
 }
@@ -338,7 +354,6 @@ a.pure-button-primary {
     font-size: 16px;
     font-weight: 500;
     color: #B2B5C0;
-    /* font-family: "Rajdhani", sans-serif; */
     line-height: 1;
     margin: 0;
     margin-top: 6px;
