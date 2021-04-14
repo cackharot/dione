@@ -243,7 +243,7 @@ func createPool(addr string) pool.Pool {
 func main() {
 	db := setupDb()
 
-	wrkAddrs := s.Split(getEnv("DIONE_WORKER_ADDRESS", "192.168.0.110:9033"), ",")
+	wrkAddrs := s.Split(getEnv("DIONE_WORKER_ADDRESS", "192.168.0.101:9033"), ",")
 	executeStatFetchJob(wrkAddrs, db, 5)
 
 	fmt.Println("Starting API server on localhost:8088")

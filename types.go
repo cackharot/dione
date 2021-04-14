@@ -118,3 +118,8 @@ type Estimate struct {
 type AppState struct {
 	db *bolt.DB
 }
+
+type DF map[int64]struct {
+	len int
+	sum float64
+}

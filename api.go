@@ -13,7 +13,7 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
-//go:embed assets/css/* assets/img/* assets/fonts/* templates/*
+//go:embed assets/css/* assets/img/* assets/fonts/* assets/js/* templates/*
 var f embed.FS
 
 func runApi(state *AppState) {
@@ -43,7 +43,7 @@ func runApi(state *AppState) {
 	})
 
 	r.GET("/stats", func(c *gin.Context) {
-		stats(c, state.db)
+		calc_stats(c, state.db)
 	})
 
 	r.Run(":8080")
@@ -65,7 +65,7 @@ func updateData(k []byte, v []byte, wrks []string, data *ChartData) {
 	if err != nil {
 		println("error in parsing time"+string(k), err)
 	} else {
-		t := key.Unix()
+		t := key.Unix() * 1000
 		if item.Connected {
 			data.Hashrates[t] = item.Hashrate
 			data.Workers[t] = len(wrks)
@@ -77,7 +77,7 @@ func updateData(k []byte, v []byte, wrks []string, data *ChartData) {
 	}
 }
 
-func stats(c *gin.Context, db *bolt.DB) {
+func calc_stats(c *gin.Context, db *bolt.DB) {
 	data := &ChartData{
 		Hashrates:      make(map[int64]float64),
 		Power:          make(map[int64]float64),
@@ -107,6 +107,16 @@ func stats(c *gin.Context, db *bolt.DB) {
 
 		return nil
 	})
+
+	var d int64 = 1000 * 60 * 60 // 1 hr resample
+	var min time.Time = time.Now().Local().AddDate(0, 0, -1)
+	data.Hashrates = dfResample(data.Hashrates, min, d)
+	data.Power = dfResample(data.Power, min, d)
+	data.Workers = dfResampleInt(data.Workers, min, d)
+	data.ValidShares = dfResampleInt(data.ValidShares, min, d)
+	data.InvalidShares = dfResampleInt(data.InvalidShares, min, d)
+	data.RejectedShares = dfResampleInt(data.RejectedShares, min, d)
+
 	c.JSON(200, data)
 }
 
