@@ -188,6 +188,7 @@ func executeStatFetchJob(wrkAddrs []string, db *bolt.DB, t int) {
 			pl.Put(v)
 			if err1 != nil {
 				fmt.Println("Unable to store stats", err1)
+				pl.Release()
 				return
 			}
 		})
@@ -243,7 +244,7 @@ func createPool(addr string) pool.Pool {
 func main() {
 	db := setupDb()
 
-	wrkAddrs := s.Split(getEnv("DIONE_WORKER_ADDRESS", "192.168.0.101:9033"), ",")
+	wrkAddrs := s.Split(getEnv("DIONE_WORKER_ADDRESS", "192.168.0.125:9033"), ",")
 	executeStatFetchJob(wrkAddrs, db, 5)
 
 	fmt.Println("Starting API server on localhost:8088")

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/binary"
 	"math"
 	"os"
 	"reflect"
@@ -10,11 +9,11 @@ import (
 )
 
 // itob returns an 8-byte big endian representation of v.
-func itob(v int) []byte {
-	b := make([]byte, 8)
-	binary.BigEndian.PutUint64(b, uint64(v))
-	return b
-}
+// func itob(v int) []byte {
+// 	b := make([]byte, 8)
+// 	binary.BigEndian.PutUint64(b, uint64(v))
+// 	return b
+// }
 
 // converts hex number (0x34be667) to floating point number
 func hexToF(h string) float64 {

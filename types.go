@@ -94,6 +94,7 @@ type GlobalStat struct {
 	InactiveWorkers int
 	Workers         int
 	Devices         int
+	Temps           map[string]map[string]float64
 	Hashrate        float64
 	Power           float64 // per 24 hr
 	PowerCostKwh    float64

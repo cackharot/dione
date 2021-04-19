@@ -147,6 +147,13 @@ func dashboard(c *gin.Context, db *bolt.DB) {
 		gs.Hashrate = gs.Hashrate + v.Hashrate
 		gs.Power = gs.Power + v.Power
 		gs.Devices = gs.Devices + len(v.Devices)
+		gs.Temps = make(map[string]map[string]float64)
+		for _, d := range v.Devices {
+			if gs.Temps[v.Name] == nil {
+				gs.Temps[v.Name] = make(map[string]float64)
+			}
+			gs.Temps[v.Name][d.Name] = d.Temperature
+		}
 		for sidx, s := range v.Shares {
 			gs.Shares[sidx] = gs.Shares[sidx] + s
 		}

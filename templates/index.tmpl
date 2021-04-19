@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta http-equiv="refresh" content="30">
+    <!-- <meta http-equiv="refresh" content="30"> -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dione - Miner stats</title>
     <link rel="stylesheet" href="/public/assets/css/pure-min.css">
@@ -69,6 +69,20 @@
                             </div>
                         </div>
                     </div>
+                    <p style="font-weight: bold;">Temperatures</p>
+                    {{ range $d_wrkName, $d_val := .stat.Temps }}
+                    <p style="font-weight: bold;margin-top: 0;">Worker: {{$d_wrkName}}</p>
+                    <div class="square_container temps">
+                        {{ range $dv_name, $dv_temp := $d_val }}
+                        <div class="square">
+                            <div class="content">
+                                <h3 style="color: inherit; {{ if gt $dv_temp 65.0 }}color: #EA5D5D;{{end}}">{{$dv_name}}</h3>
+                                <p style="color: inherit; {{ if gt $dv_temp 62.0 }}color: #EA5D5D;{{end}}">{{$dv_temp}}° C</p>
+                            </div>
+                        </div>
+                        {{ end }}
+                    </div>
+                    {{ end }}
                     <p style="font-weight: bold;">Power Costs Estimates</p>
                     <div class="square_container">
                         <div class="square">
@@ -165,7 +179,7 @@
                     flex-direction: row;
                     justify-content: space-around;">
                             <div>
-                                <p style="margin: 0;">Temperature: {{ $d.Temperature | printf "%.0f"}} C</p>
+                                <p style="margin: 0;">Temperature: {{ $d.Temperature | printf "%.0f"}}° C</p>
                                 <p style="margin: 0;">Fan: {{$d.Fan}}%</p>
                                 <p style="margin: 0;">Power: {{$d.Power | printf "%0.2f"}} Watts</p>
                             </div>

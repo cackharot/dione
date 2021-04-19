@@ -329,7 +329,8 @@ a.pure-button-primary {
     padding: 0;
 }
 
-.square_container.shares .square .content {
+.square_container.shares .square .content,
+.square_container.temps .square .content {
     margin-left: 10px;
     flex-basis: 100%;
     text-align: center;
@@ -347,6 +348,10 @@ a.pure-button-primary {
     font-family: "Jura", sans-serif;
     line-height: 1;
     white-space: nowrap;
+}
+
+.square_container.temps .square h3 {
+    font-size: smaller;
 }
 
 .square_container .square p {
@@ -439,5 +444,15 @@ a.pure-button-primary {
         grid-template-columns: repeat(4, 1fr);
         grid-gap: 15px;
         /* margin-bottom: 30px; */
+    }
+
+    .square_container.temps {
+        grid-template-columns: repeat(2, 1fr);
+        grid-gap: 15px;
+        /* margin-bottom: 30px; */
+    }
+
+    .square_container.temps .square h3 {
+        font-size: xx-small;
     }
 }
