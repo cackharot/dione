@@ -203,7 +203,15 @@ a.pure-button-primary {
     margin-top: 0px;
 }
 
+.balance.unpaid {
+    color: white;
+    font-family: Roboto;
+    margin-top: -8px;
+    font-size: xx-small;
+}
+
 .since {
+    margin-top: 5px;
     font-size: 18px;
     letter-spacing: 1px;
     text-align: center;

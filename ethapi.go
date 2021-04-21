@@ -26,6 +26,16 @@ type EthMarketPriceResponse struct {
 	Error     string
 }
 
+type EthUnpaidBalanceResponse struct {
+	Status string
+	Data   struct {
+		CurrentStatistics struct {
+			ActiveWorkers int
+			Unpaid        int64
+		}
+	}
+}
+
 func EthBalance(address string, apiKey string) float64 {
 	url := strings.Join([]string{
 		"https://api.etherscan.io/api?module=account&action=balance&address=",
@@ -70,4 +80,27 @@ func EthMarketPrice() float64 {
 	}
 	v, _ := strconv.ParseFloat(r.Ticker.Price, 64)
 	return v
+}
+
+func EthUnpaidBalance(address string) float64 {
+	url := strings.Join([]string{"https://api.ethermine.org/miner/", address, "/dashboard"}, "")
+	resp, err := http.Get(url)
+	if err != nil {
+		fmt.Println("Unable to fetch eth unpaid balance", err)
+		return 0.0
+	}
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Unable to fetch eth unpaid balance", err)
+		return 0.0
+	}
+	r := EthUnpaidBalanceResponse{}
+	json.Unmarshal(b, &r)
+	if r.Status != "OK" {
+		fmt.Println("Invalid api response for eth unpaid balance")
+		return 0.0
+	}
+	val := float64(r.Data.CurrentStatistics.Unpaid) / 1000000000000000000.0
+	return val
 }

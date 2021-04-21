@@ -16,7 +16,7 @@
         <div class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
             <a class="pure-menu-heading" href="/">Dione</a>
             <ul class="pure-menu-list">
-                <li class="pure-menu-item pure-menu-selected"><a href="/" class="pure-menu-link">Home</a></li>
+                <li class="pure-menu-item pure-menu-selected"><a href="/" class="pure-menu-link">Portfolio</a></li>
                 <li class="pure-menu-item"><a href="#workers" class="pure-menu-link">Workers</a></li>
                 <li class="pure-menu-item"><a href="/settings" class="pure-menu-link">Settings</a></li>
             </ul>
@@ -28,6 +28,7 @@
             <div class="pure-g ribbon">
                 <p class="balance">{{.ethBalance}} ETH</p>
                 <p class="balance usd">${{.ethBalanceUSD | printf "%0.2f"}} USD</p>
+                <p class="balance unpaid">{{.ethUnpaidBalance}} ETH ${{.ethUnpaidBalanceUSD | printf "%0.2f"}} USD</p>
                 <p class="since">Started {{.sinceH}} <small>({{.since | printf "%0.0f"}} days)</small></p>
             </div>
             <h3 style="margin: 0;margin-top: 10px;">Global Stats</h3>

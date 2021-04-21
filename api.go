@@ -149,10 +149,22 @@ func getEthMarketPriceInDb(db *bolt.DB) float64 {
 	return bal
 }
 
+func getEthUnpaidBalanceDb(db *bolt.DB) float64 {
+	var bal float64 = 0.0
+	db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("eth_balance"))
+		v := b.Get([]byte("unpaid"))
+		bal, _ = strconv.ParseFloat(string(v), 64)
+		return nil
+	})
+	return bal
+}
+
 func dashboard(c *gin.Context, db *bolt.DB) {
 	lst := make([]WorkerStat, 0)
 	ethBalance := getEthBalanceInDb(db)
 	ethMarketPrice := getEthMarketPriceInDb(db)
+	ethUnpaidBalance := getEthUnpaidBalanceDb(db)
 	db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("rigs"))
 		c := b.Cursor()
@@ -195,13 +207,15 @@ func dashboard(c *gin.Context, db *bolt.DB) {
 	diff := time.Since(startDate)
 
 	c.HTML(http.StatusOK, "index.tmpl", gin.H{
-		"title":          "Miner Stats",
-		"items":          lst,
-		"stat":           gs,
-		"ethBalance":     humanize.Ftoa(ethBalance),
-		"ethBalanceUSD":  ethBalance * ethMarketPrice,
-		"ethMarketPrice": humanize.Ftoa(ethMarketPrice),
-		"since":          diff.Hours() / 24.0,
-		"sinceH":         humanize.Time(time.Now().Add(-diff)),
+		"title":               "Miner Stats",
+		"items":               lst,
+		"stat":                gs,
+		"ethBalance":          humanize.Ftoa(ethBalance),
+		"ethBalanceUSD":       ethBalance * ethMarketPrice,
+		"ethMarketPrice":      humanize.Ftoa(ethMarketPrice),
+		"ethUnpaidBalance":    humanize.Ftoa(ethUnpaidBalance),
+		"ethUnpaidBalanceUSD": ethUnpaidBalance * ethMarketPrice,
+		"since":               diff.Hours() / 24.0,
+		"sinceH":              humanize.Time(time.Now().Add(-diff)),
 	})
 }

@@ -172,6 +172,30 @@ func markWorkerOffline(wrkAddr string, db *bolt.DB) {
 	})
 }
 
+func updateEthMarketAndUnpaidBalance(ethAddress string, db *bolt.DB) {
+	db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("eth_balance"))
+		val := EthMarketPrice()
+		if val > 0.0 {
+			b.Put([]byte("market_price"), []byte(strconv.FormatFloat(val, 'f', 10, 64)))
+		}
+		unpaidBalance := EthUnpaidBalance(ethAddress)
+		if unpaidBalance > 0.0 {
+			b.Put([]byte("unpaid"), []byte(strconv.FormatFloat(unpaidBalance, 'f', 10, 64)))
+		}
+		return nil
+	})
+}
+
+func updateEthBalance(ethAddress string, apiKey string, db *bolt.DB) {
+	db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("eth_balance"))
+		val := EthBalance(ethAddress, apiKey)
+		b.Put([]byte("balance"), []byte(strconv.FormatFloat(val, 'f', 10, 64)))
+		return nil
+	})
+}
+
 func executeStatFetchJob(wrkAddrs []string, db *bolt.DB, t int) {
 	s := gocron.NewScheduler(time.UTC)
 	for _, wrkAddr := range wrkAddrs {
@@ -195,26 +219,14 @@ func executeStatFetchJob(wrkAddrs []string, db *bolt.DB, t int) {
 			}
 		})
 	}
-	s.Every(1).Hour().Do(func() {
-		db.Update(func(tx *bolt.Tx) error {
-			b := tx.Bucket([]byte("eth_balance"))
-			val := EthMarketPrice()
-			if val > 0.0 {
-				b.Put([]byte("market_price"), []byte(strconv.FormatFloat(val, 'f', 10, 64)))
-			}
-			return nil
-		})
-	})
 	ethAddress := getEnv("DIONE_ETH_ADDRESS", "")
 	apiKey := getEnv("DIONE_ETH_API_KEY", "")
 	if ethAddress != "" && apiKey != "" {
 		s.Every(1).Day().Do(func() {
-			db.Update(func(tx *bolt.Tx) error {
-				b := tx.Bucket([]byte("eth_balance"))
-				val := EthBalance(ethAddress, apiKey)
-				b.Put([]byte("balance"), []byte(strconv.FormatFloat(val, 'f', 10, 64)))
-				return nil
-			})
+			updateEthBalance(ethAddress, apiKey, db)
+		})
+		s.Every(1).Hour().Do(func() {
+			updateEthMarketAndUnpaidBalance(ethAddress, db)
 		})
 	} else {
 		fmt.Println("Not fetching ETH balance as no address & api key been provided")
