@@ -73,7 +73,7 @@ func getConn(wrkAddr string) (net.Conn, error) {
 		println("ResolveTCPAddr failed:", err.Error())
 		return nil, err
 	}
-	conn, err := net.DialTCP("tcp", nil, tcpAddr)
+	conn, err := net.DialTimeout("tcp", tcpAddr.String(), 5*time.Second)
 	if err != nil {
 		println("Dial failed:", err.Error())
 		return nil, err
@@ -180,6 +180,7 @@ func executeStatFetchJob(wrkAddrs []string, db *bolt.DB, t int) {
 			v, err := pl.Get()
 			if err != nil {
 				fmt.Println("Unable to connect to "+wrkAddr, err)
+				pl.Release()
 				markWorkerOffline(wrkAddr, db)
 				return
 			}
@@ -221,7 +222,7 @@ func setupDb() *bolt.DB {
 
 func createPool(addr string) pool.Pool {
 	factory := func() (interface{}, error) {
-		return net.DialTimeout("tcp", addr, 5*time.Second)
+		return getConn(addr)
 	}
 	close := func(v interface{}) error { return v.(net.Conn).Close() }
 	poolConfig := &pool.Config{
