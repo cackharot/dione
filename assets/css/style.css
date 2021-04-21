@@ -187,6 +187,34 @@ a.pure-button-primary {
     color: #aaa;
 }
 
+.balance {
+    font-size: 24px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    font-family: Jura;
+    color: #FB8500;
+    text-align: center;
+    width: 100%;
+}
+
+.balance.usd {
+    color: white;
+    font-family: Roboto;
+    margin-top: 0px;
+}
+
+.since {
+    font-size: 18px;
+    letter-spacing: 1px;
+    text-align: center;
+    width: 100%;
+    color: #fff;
+}
+
+.since small {
+    font-size: xx-small;
+}
+
 /* This is the class used for the footer */
 .footer {
     background: #111;
@@ -454,5 +482,9 @@ a.pure-button-primary {
 
     .square_container.temps .square h3 {
         font-size: xx-small;
+    }
+
+    .content-wrapper {
+        top: 6%;
     }
 }

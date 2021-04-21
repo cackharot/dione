@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"html/template"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/gin-gonic/gin"
 
 	bolt "go.etcd.io/bbolt"
@@ -27,6 +29,11 @@ func runApi(state *AppState) {
 		},
 		"multiply": func(a, b float64) float64 {
 			return a * b
+		},
+		"humanizeTime": func(a float64) string {
+			n := time.Now()
+			val := n.Add(-time.Duration(a) * time.Second)
+			return humanize.Time(val)
 		},
 	}
 	templ := template.Must(template.New("").Funcs(fm).ParseFS(f, "templates/*.tmpl"))
@@ -120,8 +127,32 @@ func calc_stats(c *gin.Context, db *bolt.DB) {
 	c.JSON(200, data)
 }
 
+func getEthBalanceInDb(db *bolt.DB) float64 {
+	var bal float64 = 0.0
+	db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("eth_balance"))
+		v := b.Get([]byte("balance"))
+		bal, _ = strconv.ParseFloat(string(v), 64)
+		return nil
+	})
+	return bal
+}
+
+func getEthMarketPriceInDb(db *bolt.DB) float64 {
+	var bal float64 = 0.0
+	db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("eth_balance"))
+		v := b.Get([]byte("market_price"))
+		bal, _ = strconv.ParseFloat(string(v), 64)
+		return nil
+	})
+	return bal
+}
+
 func dashboard(c *gin.Context, db *bolt.DB) {
 	lst := make([]WorkerStat, 0)
+	ethBalance := getEthBalanceInDb(db)
+	ethMarketPrice := getEthMarketPriceInDb(db)
 	db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("rigs"))
 		c := b.Cursor()
@@ -158,11 +189,19 @@ func dashboard(c *gin.Context, db *bolt.DB) {
 			gs.Shares[sidx] = gs.Shares[sidx] + s
 		}
 	}
-	gs.PowerCost = 24.0 / (1000 / gs.Power) * gs.PowerCostKwh
+	gs.PowerCost = 24.0 / (1000.0 / gs.Power) * gs.PowerCostKwh
+	st := getEnv("DIONE_START_DATE", time.Now().Format(time.RFC3339))
+	startDate, _ := time.Parse(time.RFC3339, st)
+	diff := time.Since(startDate)
 
 	c.HTML(http.StatusOK, "index.tmpl", gin.H{
-		"title": "Miner Stats",
-		"items": lst,
-		"stat":  gs,
+		"title":          "Miner Stats",
+		"items":          lst,
+		"stat":           gs,
+		"ethBalance":     humanize.Ftoa(ethBalance),
+		"ethBalanceUSD":  ethBalance * ethMarketPrice,
+		"ethMarketPrice": humanize.Ftoa(ethMarketPrice),
+		"since":          diff.Hours() / 24.0,
+		"sinceH":         humanize.Time(time.Now().Add(-diff)),
 	})
 }

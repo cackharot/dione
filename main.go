@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	s "strings"
 	"time"
 
@@ -194,6 +195,31 @@ func executeStatFetchJob(wrkAddrs []string, db *bolt.DB, t int) {
 			}
 		})
 	}
+	s.Every(1).Hour().Do(func() {
+		db.Update(func(tx *bolt.Tx) error {
+			b := tx.Bucket([]byte("eth_balance"))
+			val := EthMarketPrice()
+			if val > 0.0 {
+				b.Put([]byte("market_price"), []byte(strconv.FormatFloat(val, 'f', 10, 64)))
+			}
+			return nil
+		})
+	})
+	ethAddress := getEnv("DIONE_ETH_ADDRESS", "")
+	apiKey := getEnv("DIONE_ETH_API_KEY", "")
+	if ethAddress != "" && apiKey != "" {
+		s.Every(1).Day().Do(func() {
+			db.Update(func(tx *bolt.Tx) error {
+				b := tx.Bucket([]byte("eth_balance"))
+				val := EthBalance(ethAddress, apiKey)
+				b.Put([]byte("balance"), []byte(strconv.FormatFloat(val, 'f', 10, 64)))
+				return nil
+			})
+		})
+	} else {
+		fmt.Println("Not fetching ETH balance as no address & api key been provided")
+		fmt.Println("Use DIONE_ETH_ADDRESS & DIONE_ETH_API_KEY env var to use this feature")
+	}
 	s.StartAsync()
 }
 
@@ -212,6 +238,13 @@ func setupDb() *bolt.DB {
 	})
 	db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte("rigs"))
+		if err != nil {
+			panic(err)
+		}
+		return nil
+	})
+	db.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists([]byte("eth_balance"))
 		if err != nil {
 			panic(err)
 		}
