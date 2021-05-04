@@ -205,17 +205,16 @@ func executeStatFetchJob(wrkAddrs []string, db *bolt.DB, t int) {
 			v, err := pl.Get()
 			if err != nil {
 				fmt.Println("Unable to connect to "+wrkAddr, err)
-				pl.Release()
 				markWorkerOffline(wrkAddr, db)
-				return
+				os.Exit(1)
 			}
 			conn := v.(net.Conn)
 			err1 := storeStat(conn, db)
-			pl.Put(v)
 			if err1 != nil {
 				fmt.Println("Unable to store stats", err1)
-				pl.Release()
-				return
+				os.Exit(1)
+			} else {
+				pl.Put(v)
 			}
 		})
 	}
@@ -267,6 +266,7 @@ func setupDb() *bolt.DB {
 
 func createPool(addr string) pool.Pool {
 	factory := func() (interface{}, error) {
+		addr := addr
 		return getConn(addr)
 	}
 	close := func(v interface{}) error { return v.(net.Conn).Close() }
